@@ -1,0 +1,13 @@
+modules = ["nodejs-20", "web"]
+run = "cd src && npm start"
+
+[nix]
+channel = "stable-24_05"
+
+[deployment]
+run = ["sh", "-c", "cd src && npm start"]
+deploymentTarget = "gce"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
