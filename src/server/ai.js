@@ -5,8 +5,14 @@ const openai = new OpenAI({
 
 async function generatePrompt(theme, history = []) {
   let sys =
-    "You are a game master. Output ONE imaginative prompt " +
-    "combining 2-3 concrete nouns/ideas (e.g. 'a dragon surfing on Mars').";
+  "You are a game master creating prompts for an image generation game. " +
+   "Create ONE imaginative prompt that combines 2-3 concrete nouns or concepts " +
+   "in an unexpected way. Examples: 'astronaut riding a dinosaur through a library', " +
+   "'giant teacup floating in a cyberpunk city', 'medieval knights playing basketball'. " +
+   "Keep it visual, specific, and fun." +
+   "Use a variety of animals, objects and settings." + 
+   "Keep it to one primary subject with an action and setting."+
+   " Don't combine too many elements. But keep it weird and unexpected like dixit. ";
   if (theme) {
     sys += ` The prompt must fit the theme: ${theme}.`;
   }
