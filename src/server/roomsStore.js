@@ -17,6 +17,7 @@ function createRoom() {
     currentImage: null,
     nextPrompt: null,
     nextImagePromise: null,
+    theme: null,
   };
   rooms.set(id, room);
   return id;

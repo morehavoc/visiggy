@@ -3,14 +3,20 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-async function generatePrompt() {
+async function generatePrompt(theme) {
   try {
-    const system = "You are a game master creating prompts for an image generation game. " +
+    let system = "You are a game master creating prompts for an image generation game. " +
                   "Create ONE imaginative prompt that combines 2-3 concrete nouns or concepts " +
                   "in an unexpected way. Examples: 'astronaut riding a dinosaur through a library', " +
                   "'giant teacup floating in a cyberpunk city', 'medieval knights playing basketball'. " +
-                  "Keep it visual, specific, and fun.";
+                  "Keep it visual, specific, and fun." +
+                  "Use a variety of animals, objects and settings." + 
+                  "Keep it to one primary subject with an action and setting. Don't combine too many elements. But keep it weird and unexpected like dixit. ";
     
+    if (theme) {
+      system += ` The prompt should be inspired by the following theme: "${theme}".`;
+    }
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       max_tokens: 30,
@@ -40,6 +46,30 @@ async function generatePrompt() {
       "pirate ship sailing through clouds"
     ];
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
+async function generateJoke() {
+  try {
+    const system = "You are a witty AI game host. Tell a single, short, family-friendly joke or pun about art, artists, or painting. Keep it to one or two sentences.";
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      max_tokens: 40,
+      temperature: 0.7,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: "Tell me an art joke." }
+      ]
+    });
+    
+    const joke = response.choices[0].message.content.trim();
+    console.log('Generated joke:', joke);
+    return joke;
+
+  } catch (error) {
+    console.error('Joke generation error:', error);
+    return "Why did the artist get arrested? Because he was framed!";
   }
 }
 
@@ -93,5 +123,6 @@ async function scoreGuesses(prompt, guesses) {
 
 module.exports = {
   generatePrompt,
+  generateJoke,
   scoreGuesses
 };

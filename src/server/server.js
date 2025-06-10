@@ -4,7 +4,7 @@ const WebSocket = require('ws');
 const http = require('http');
 const path = require('path');
 const roomsStore = require('./roomsStore');
-const { generatePrompt, scoreGuesses } = require('./ai');
+const { generatePrompt, scoreGuesses, generateJoke } = require('./ai');
 const { generateImage } = require('./imageGen');
 
 const app = express();
@@ -157,11 +157,12 @@ async function handleGameStart(ws, data) {
   room.stage = 'playing';
   room.currentRound = 0;
   room.roundsPlayed = 0;
+  room.theme = data.theme || null;
   
   broadcastToRoom(room, { type: 'game:started' });
   
   // Pre-generate first round's content
-  room.nextPrompt = await generatePrompt();
+  room.nextPrompt = await generatePrompt(room.theme);
   room.nextImagePromise = generateImage(room.nextPrompt);
   
   // Start first round
@@ -180,13 +181,18 @@ async function startRound(room) {
     
     broadcastToRoom(room, { type: 'round:preparing' });
 
+    // Tell a joke while the image generates
+    generateJoke().then(joke => {
+      broadcastToRoom(room, { type: 'joke:new', text: joke });
+    });
+
     // Wait for the image to be ready
     const imageUrl = await room.nextImagePromise;
     room.currentImage = imageUrl;
 
     // Pre-generate content for the *next* round (if not the last round)
     if (room.currentRound < 5) {
-        room.nextPrompt = await generatePrompt();
+        room.nextPrompt = await generatePrompt(room.theme);
         room.nextImagePromise = generateImage(room.nextPrompt);
     } else {
         room.nextPrompt = null;
@@ -324,13 +330,18 @@ async function endRound(room) {
       guess: text || '(no guess)'
     }));
     
+    room.roundsPlayed++;
+    const isGameOver = room.roundsPlayed >= 5;
+
+    // Broadcast round end
     broadcastToRoom(room, {
       type: 'round:end',
       prompt: room.currentPrompt,
       results,
       leaderboard: Object.entries(room.scores)
         .map(([team, score]) => ({ team, score }))
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => b.score - a.score),
+      intermission: !isGameOver
     });
   }
 }

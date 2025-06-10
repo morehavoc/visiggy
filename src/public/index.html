@@ -30,7 +30,10 @@
       <div id="hostLobby" class="lobby-section">
         <h3>Teams Joined:</h3>
         <div id="hostTeamsList" class="teams-list"></div>
-        <button id="startGameBtn" class="btn btn-primary" disabled>Start Game (Need 2+ teams)</button>
+        <div class="host-start-controls">
+          <input type="text" id="gameTheme" placeholder="Optional: Enter a theme (e.g., sci-fi, fantasy, animals)">
+          <button id="startGameBtn" class="btn btn-primary" disabled>Start Game (Need 2+ teams)</button>
+        </div>
       </div>
       <div id="hostGame" class="game-section" style="display: none;">
         <div class="round-info">
@@ -38,7 +41,10 @@
           <div id="hostTimer" class="timer"></div>
         </div>
         <div id="hostImageContainer" class="image-container">
-          <div class="loading-indicator" style="display: none;">Generating Image...</div>
+          <div class="loading-indicator" style="display: none;">
+            <p>Generating Image...</p>
+            <p class="joke-text"></p>
+          </div>
           <div class="countdown" style="display: none;"></div>
         </div>
         <div id="hostControls" class="host-controls">
@@ -73,7 +79,10 @@
           <div id="teamTimer" class="timer"></div>
         </div>
         <div id="teamImageContainer" class="image-container">
-          <div class="loading-indicator" style="display: none;">Generating Image...</div>
+          <div class="loading-indicator" style="display: none;">
+            <p>Generating Image...</p>
+            <p class="joke-text"></p>
+          </div>
           <div class="countdown" style="display: none;"></div>
         </div>
         <div id="guessSection" class="guess-section">

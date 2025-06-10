@@ -117,7 +117,8 @@ function joinTeam() {
 
 // Start game
 function startGame() {
-  ws.send(JSON.stringify({ type: 'game:start' }));
+  const theme = document.getElementById('gameTheme').value.trim();
+  ws.send(JSON.stringify({ type: 'game:start', theme: theme }));
 }
 
 // Submit guess
@@ -241,6 +242,10 @@ function handleMessage(data) {
       
     case 'round:preparing':
       showLoadingIndicator(true);
+      break;
+
+    case 'joke:new':
+      showJoke(data.text);
       break;
 
     case 'round:ready':
@@ -483,6 +488,11 @@ function showMessage(message) {
   setTimeout(() => messageEl.remove(), 3000);
 }
 
+function showJoke(joke) {
+  const jokeElements = document.querySelectorAll('.joke-text');
+  jokeElements.forEach(el => el.textContent = `"${joke}"`);
+}
+
 function showLoadingIndicator(show) {
   const containers = [document.getElementById('hostImageContainer'), document.getElementById('teamImageContainer')];
   containers.forEach(container => {
@@ -491,6 +501,9 @@ function showLoadingIndicator(show) {
     if (show) {
       loader.style.display = 'block';
       if (image) image.style.display = 'none';
+      // Clear previous joke
+      const jokeEl = container.querySelector('.joke-text');
+      if (jokeEl) jokeEl.textContent = '';
     } else {
       loader.style.display = 'none';
       if (image) image.style.display = 'block';
