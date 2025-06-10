@@ -1,4 +1,4 @@
-const fetch = (await import('node-fetch')).default;
+const fetch = require('node-fetch');
 
 async function generateImage(prompt) {
   const base = process.env.CUSTOM_AI_ENDPOINT.replace(/\/$/, "");
