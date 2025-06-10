@@ -59,7 +59,7 @@ async function generateJoke() {
       temperature: 0.7,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: "Tell me an art joke." }
+        { role: "user", content: "Tell me a joke." }
       ]
     });
     

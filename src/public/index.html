@@ -32,12 +32,22 @@
         <div id="hostTeamsList" class="teams-list"></div>
         <div class="host-start-controls">
           <input type="text" id="gameTheme" placeholder="Optional: Enter a theme (e.g., sci-fi, fantasy, animals)">
+          <div class="game-options">
+            <label for="numRounds">Rounds:</label>
+            <select id="numRounds">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5" selected>5</option>
+            </select>
+          </div>
           <button id="startGameBtn" class="btn btn-primary" disabled>Start Game (Need 2+ teams)</button>
         </div>
       </div>
       <div id="hostGame" class="game-section" style="display: none;">
         <div class="round-info">
-          <h3>Round <span id="hostRoundNum">1</span> of 5</h3>
+          <h3>Round <span id="hostRoundNum">1</span> of <span id="hostTotalRounds">5</span></h3>
           <div id="hostTimer" class="timer"></div>
         </div>
         <div id="hostImageContainer" class="image-container">
@@ -75,7 +85,7 @@
       </div>
       <div id="teamGame" class="game-section" style="display: none;">
         <div class="round-info">
-          <h3>Round <span id="teamRoundNum">1</span> of 5</h3>
+          <h3>Round <span id="teamRoundNum">1</span> of <span id="teamTotalRounds">5</span></h3>
           <div id="teamTimer" class="timer"></div>
         </div>
         <div id="teamImageContainer" class="image-container">
@@ -101,6 +111,10 @@
     <div id="gameOverScreen" class="screen">
       <h1>Game Over!</h1>
       <div id="finalLeaderboard" class="final-leaderboard"></div>
+      <div id="imageHistory" class="image-history">
+        <h3>Game Gallery</h3>
+        <div id="imageHistoryContainer" class="image-history-container"></div>
+      </div>
       <button id="newGameBtn" class="btn btn-primary">Start New Game</button>
     </div>
   </div>

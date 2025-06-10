@@ -12,12 +12,15 @@ function createRoom() {
     scores: {},
     currentRound: 0,
     roundsPlayed: 0,
+    totalRounds: 5, // Add total rounds
+    imageHistory: [], // Add image history
     createdAt: Date.now(),
     currentPrompt: null,
     currentImage: null,
     nextPrompt: null,
     nextImagePromise: null,
     theme: null,
+    jokeInterval: null,
   };
   rooms.set(id, room);
   return id;

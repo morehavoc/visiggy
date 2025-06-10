@@ -158,8 +158,9 @@ async function handleGameStart(ws, data) {
   room.currentRound = 0;
   room.roundsPlayed = 0;
   room.theme = data.theme || null;
+  room.totalRounds = data.numRounds || 5;
   
-  broadcastToRoom(room, { type: 'game:started' });
+  broadcastToRoom(room, { type: 'game:started', totalRounds: room.totalRounds });
   
   // Pre-generate first round's content
   room.nextPrompt = await generatePrompt(room.theme);
@@ -171,7 +172,6 @@ async function handleGameStart(ws, data) {
 
 async function startRound(room) {
   try {
-    room.currentRound++;
     room.currentGuesses = {};
     room.roundActive = true;
     room.roundStartTime = Date.now();
@@ -181,17 +181,32 @@ async function startRound(room) {
     
     broadcastToRoom(room, { type: 'round:preparing' });
 
-    // Tell a joke while the image generates
-    generateJoke().then(joke => {
-      broadcastToRoom(room, { type: 'joke:new', text: joke });
-    });
+    // Tell jokes while the image generates
+    if (room.jokeInterval) clearInterval(room.jokeInterval);
+    const sendJoke = () => {
+      generateJoke().then(joke => {
+        broadcastToRoom(room, { type: 'joke:new', text: joke });
+      });
+    };
+    sendJoke(); // Send one immediately
+    room.jokeInterval = setInterval(sendJoke, 20000);
 
     // Wait for the image to be ready
     const imageUrl = await room.nextImagePromise;
+    
+    // Stop the jokes
+    if (room.jokeInterval) clearInterval(room.jokeInterval);
+    room.jokeInterval = null;
+
     room.currentImage = imageUrl;
 
+    // Add to history
+    if (room.currentPrompt && imageUrl) {
+      room.imageHistory.push({ prompt: room.currentPrompt, imageUrl });
+    }
+
     // Pre-generate content for the *next* round (if not the last round)
-    if (room.currentRound < 5) {
+    if (room.currentRound < room.totalRounds) {
         room.nextPrompt = await generatePrompt(room.theme);
         room.nextImagePromise = generateImage(room.nextPrompt);
     } else {
@@ -211,6 +226,8 @@ async function startRound(room) {
     room.roundTimeout = setTimeout(() => endRound(room), 63000); // 60s + 3s countdown
     
   } catch (error) {
+    if (room.jokeInterval) clearInterval(room.jokeInterval);
+    room.jokeInterval = null;
     console.error('Round start error:', error);
     if (room.hostWs) {
       room.hostWs.send(JSON.stringify({
@@ -241,6 +258,8 @@ function handleGuessSubmit(ws, data) {
 }
 
 async function endRound(room) {
+  if (room.jokeInterval) clearInterval(room.jokeInterval);
+  room.jokeInterval = null;
   room.roundActive = false;
   
   // Prepare guesses for scoring
@@ -302,7 +321,7 @@ async function endRound(room) {
     });
     
     room.roundsPlayed++;
-    const isGameOver = room.roundsPlayed >= 5;
+    const isGameOver = room.roundsPlayed >= room.totalRounds;
 
     // Broadcast round end
     broadcastToRoom(room, {
@@ -331,7 +350,7 @@ async function endRound(room) {
     }));
     
     room.roundsPlayed++;
-    const isGameOver = room.roundsPlayed >= 5;
+    const isGameOver = room.roundsPlayed >= room.totalRounds;
 
     // Broadcast round end
     broadcastToRoom(room, {
@@ -354,10 +373,19 @@ function handleNextRound(ws, data) {
     if (!room || room.stage !== 'intermission') return;
 
     room.stage = 'playing';
+    room.currentRound++;
+
+    broadcastToRoom(room, {
+        type: 'round:next',
+        round: room.currentRound
+    });
+
     startRound(room);
 }
 
 function endGame(room) {
+  if (room.jokeInterval) clearInterval(room.jokeInterval);
+  room.jokeInterval = null;
   room.stage = 'ended';
   
   const finalLeaderboard = Object.entries(room.scores)
@@ -366,7 +394,8 @@ function endGame(room) {
   
   broadcastToRoom(room, {
     type: 'game:over',
-    leaderboard: finalLeaderboard
+    leaderboard: finalLeaderboard,
+    imageHistory: room.imageHistory
   });
   
   // Save final state
@@ -380,6 +409,8 @@ function handleSkipRound(ws, data) {
   const room = roomsStore.get(conn.roomId);
   if (!room || !room.roundActive) return;
   
+  if (room.jokeInterval) clearInterval(room.jokeInterval);
+  room.jokeInterval = null;
   clearTimeout(room.roundTimeout);
   room.roundActive = false;
   

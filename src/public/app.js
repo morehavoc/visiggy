@@ -92,6 +92,7 @@ function joinRoom() {
   
   gameState.roomId = roomCode;
   gameState.isHost = false;
+  gameState.teamName = null; // Clear previous team name for a fresh join
   
   saveState();
   connectWebSocket();
@@ -118,7 +119,8 @@ function joinTeam() {
 // Start game
 function startGame() {
   const theme = document.getElementById('gameTheme').value.trim();
-  ws.send(JSON.stringify({ type: 'game:start', theme: theme }));
+  const numRounds = document.getElementById('numRounds').value;
+  ws.send(JSON.stringify({ type: 'game:start', theme: theme, numRounds: parseInt(numRounds) }));
 }
 
 // Submit guess
@@ -234,12 +236,30 @@ function handleMessage(data) {
       if (gameState.isHost) {
         document.getElementById('hostLobby').style.display = 'none';
         document.getElementById('hostGame').style.display = 'block';
+        document.getElementById('hostTotalRounds').textContent = data.totalRounds;
       } else {
         document.getElementById('teamLobby').style.display = 'none';
         document.getElementById('teamGame').style.display = 'block';
+        document.getElementById('teamTotalRounds').textContent = data.totalRounds;
       }
       break;
       
+    case 'round:next':
+      stopTimer();
+      const timerEl = gameState.isHost ? 'hostTimer' : 'teamTimer';
+      document.getElementById(timerEl).textContent = '';
+
+      if (gameState.isHost) {
+        document.getElementById('hostResults').style.display = 'none';
+        document.getElementById('nextRoundBtn').style.display = 'none';
+      } else {
+        document.getElementById('teamResults').style.display = 'none';
+        document.getElementById('teamWaitingNextRound').style.display = 'none';
+      }
+      const roundNumEl = gameState.isHost ? 'hostRoundNum' : 'teamRoundNum';
+      document.getElementById(roundNumEl).textContent = data.round;
+      break;
+
     case 'round:preparing':
       showLoadingIndicator(true);
       break;
@@ -280,7 +300,7 @@ function handleMessage(data) {
       break;
       
     case 'game:over':
-      showGameOver(data.leaderboard);
+      showGameOver(data.leaderboard, data.imageHistory);
       break;
       
     case 'reconnected':
@@ -326,14 +346,14 @@ function startRoundUI(data) {
   // Start timer
   startTimer(data.duration);
   
-  // Hide previous results
-  if (gameState.isHost) {
-    document.getElementById('hostResults').style.display = 'none';
-    document.getElementById('nextRoundBtn').style.display = 'none';
-  } else {
-    document.getElementById('teamResults').style.display = 'none';
-    document.getElementById('teamWaitingNextRound').style.display = 'none';
-  }
+  // Hide previous results - This is now handled by 'round:next'
+  // if (gameState.isHost) {
+  //   document.getElementById('hostResults').style.display = 'none';
+  //   document.getElementById('nextRoundBtn').style.display = 'none';
+  // } else {
+  //   document.getElementById('teamResults').style.display = 'none';
+  //   document.getElementById('teamWaitingNextRound').style.display = 'none';
+  // }
 }
 
 function endRoundUI(data) {
@@ -439,7 +459,7 @@ function updateTimerDisplay() {
   }
 }
 
-function showGameOver(leaderboard) {
+function showGameOver(leaderboard, imageHistory) {
   showScreen('gameOver');
   
   const finalHTML = `
@@ -453,6 +473,19 @@ function showGameOver(leaderboard) {
   `;
   
   document.getElementById('finalLeaderboard').innerHTML = finalHTML;
+
+  if (imageHistory && imageHistory.length > 0) {
+    const historyContainer = document.getElementById('imageHistoryContainer');
+    const historyHTML = imageHistory.map(item => `
+      <div class="history-item">
+        <a href="${item.imageUrl}" download="visiggy-art-${Date.now()}.png" target="_blank">
+          <img src="${item.imageUrl}" alt="${item.prompt}">
+          <div class="prompt-overlay"><span>${item.prompt}</span></div>
+        </a>
+      </div>
+    `).join('');
+    historyContainer.innerHTML = historyHTML;
+  }
   
   // Clear saved state
   localStorage.removeItem('gameState');
@@ -496,17 +529,18 @@ function showJoke(joke) {
 function showLoadingIndicator(show) {
   const containers = [document.getElementById('hostImageContainer'), document.getElementById('teamImageContainer')];
   containers.forEach(container => {
+    if (!container) return;
     const loader = container.querySelector('.loading-indicator');
     const image = container.querySelector('img');
+    
     if (show) {
-      loader.style.display = 'block';
-      if (image) image.style.display = 'none';
+      if (loader) loader.style.display = 'block';
+      if (image) image.remove(); // Remove old image
       // Clear previous joke
       const jokeEl = container.querySelector('.joke-text');
       if (jokeEl) jokeEl.textContent = '';
     } else {
-      loader.style.display = 'none';
-      if (image) image.style.display = 'block';
+      if (loader) loader.style.display = 'none';
     }
   });
 }
@@ -517,16 +551,28 @@ function startCountdown(data) {
   let count = 3;
   const countdownInterval = setInterval(() => {
     containers.forEach(container => {
+      if (!container) return;
       const countdownEl = container.querySelector('.countdown');
-      countdownEl.style.display = 'block';
-      countdownEl.textContent = count;
+      if (countdownEl) {
+        countdownEl.style.display = 'block';
+        countdownEl.textContent = count;
+      }
     });
     
     if (count === 0) {
       clearInterval(countdownInterval);
       containers.forEach(container => {
-        container.querySelector('.countdown').style.display = 'none';
-        container.innerHTML = `<img src="${data.imageUrl}" alt="Guess this image">`;
+        if (!container) return;
+        const countdownEl = container.querySelector('.countdown');
+        if (countdownEl) countdownEl.style.display = 'none';
+        
+        // Create and append image instead of replacing innerHTML
+        const img = document.createElement('img');
+        img.src = data.imageUrl;
+        img.alt = "Guess this image";
+        container.appendChild(img);
+        
+        showLoadingIndicator(false);
       });
       startRoundUI(data);
     }
