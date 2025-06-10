@@ -3,50 +3,32 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-async function generatePrompt(theme) {
-  try {
-    let system = "You are a game master creating prompts for an image generation game. " +
-                  "Create ONE imaginative prompt that combines 2-3 concrete nouns or concepts " +
-                  "in an unexpected way. Examples: 'astronaut riding a dinosaur through a library', " +
-                  "'giant teacup floating in a cyberpunk city', 'medieval knights playing basketball'. " +
-                  "Keep it visual, specific, and fun." +
-                  "Use a variety of animals, objects and settings." + 
-                  "Keep it to one primary subject with an action and setting. Don't combine too many elements. But keep it weird and unexpected like dixit. ";
-    
-    if (theme) {
-      system += ` The prompt should be inspired by the following theme: "${theme}".`;
-    }
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      max_tokens: 30,
-      temperature: 0.9,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: "Generate a creative visual prompt:" }
-      ]
-    });
-    
-    const prompt = response.choices[0].message.content
-      .trim()
-      .replace(/^["'\s]+|["'\s]+$/g, "")
-      .replace(/^(Generate:|Create:|Prompt:)/i, "")
-      .trim();
-    
-    console.log('Generated prompt:', prompt);
-    return prompt;
-  } catch (error) {
-    console.error('Prompt generation error:', error);
-    // Fallback prompts if API fails
-    const fallbacks = [
-      "robot chef cooking in a volcano",
-      "penguin detective solving mysteries underwater",
-      "dragon teaching yoga to knights",
-      "alien tourist visiting a medieval market",
-      "pirate ship sailing through clouds"
-    ];
-    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+async function generatePrompt(theme, history = []) {
+  let sys =
+    "You are a game master. Output ONE imaginative prompt " +
+    "combining 2-3 concrete nouns/ideas (e.g. 'a dragon surfing on Mars').";
+  if (theme) {
+    sys += ` The prompt must fit the theme: ${theme}.`;
   }
+
+  let userMsg = "New prompt, no extra text.";
+  if (history.length > 0) {
+    const promptHistory = history.join('\n- ');
+    userMsg = `Please generate a new, unique prompt. Avoid themes or subjects from these previous prompts:\n- ${promptHistory}\n\nNew prompt, no extra text:`;
+  }
+
+  console.log("Generating prompt with history:", history);
+
+  const res = await openai.chat.completions.create({
+    model: "gpt-4o",
+    max_tokens: 30,
+    temperature: 0.9,
+    messages: [
+      { role: "system", content: sys },
+      { role: "user", content: userMsg },
+    ],
+  });
+  return res.choices[0].message.content.trim().replace(/^["']|["']$/g, "");
 }
 
 async function generateJoke() {

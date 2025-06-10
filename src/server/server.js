@@ -207,7 +207,8 @@ async function startRound(room) {
 
     // Pre-generate content for the *next* round (if not the last round)
     if (room.currentRound < room.totalRounds) {
-        room.nextPrompt = await generatePrompt(room.theme);
+        const history = room.imageHistory.map(h => h.prompt);
+        room.nextPrompt = await generatePrompt(room.theme, history);
         room.nextImagePromise = generateImage(room.nextPrompt);
     } else {
         room.nextPrompt = null;
