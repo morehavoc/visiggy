@@ -21,6 +21,13 @@ const screens = {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+  // Check for room code in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const roomIdFromUrl = urlParams.get('room');
+  if (roomIdFromUrl) {
+    document.getElementById('joinRoomCode').value = roomIdFromUrl.toUpperCase();
+  }
+
   // Check localStorage for reconnection
   const savedState = localStorage.getItem('gameState');
   if (savedState) {
@@ -42,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('exitHostBtn').addEventListener('click', exitRoom);
   document.getElementById('exitTeamBtn').addEventListener('click', exitRoom);
   document.getElementById('nextRoundBtn').addEventListener('click', nextRound);
+  document.getElementById('copyLinkBtn').addEventListener('click', copyShareLink);
   
   // Enter key handlers
   document.getElementById('joinRoomCode').addEventListener('keypress', (e) => {
@@ -210,6 +218,8 @@ function handleMessage(data) {
     case 'host:joined':
       showScreen('host');
       document.getElementById('hostRoomCode').textContent = data.roomId;
+      const shareUrl = `${window.location.origin}${window.location.pathname}?room=${data.roomId}`;
+      document.getElementById('shareableLink').value = shareUrl;
       updateHostTeamsList(data.teams);
       document.getElementById('startGameBtn').disabled = data.teams.length < 2;
       document.getElementById('startGameBtn').textContent = 
@@ -227,6 +237,7 @@ function handleMessage(data) {
       break;
       
     case 'team:confirmed':
+      document.getElementById('teamName').textContent = gameState.teamName;
       document.getElementById('teamWaiting').style.display = 'block';
       document.getElementById('teamNameInput').style.display = 'none';
       document.getElementById('joinTeamBtn').style.display = 'none';
@@ -317,6 +328,26 @@ function handleMessage(data) {
 function showScreen(screenName) {
   Object.values(screens).forEach(screen => screen.classList.remove('active'));
   screens[screenName].classList.add('active');
+}
+
+function copyShareLink() {
+  const linkInput = document.getElementById('shareableLink');
+  linkInput.select();
+  linkInput.setSelectionRange(0, 99999); // For mobile devices
+  
+  try {
+    navigator.clipboard.writeText(linkInput.value).then(() => {
+      const copyBtn = document.getElementById('copyLinkBtn');
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+    });
+  } catch (err) {
+    // Fallback for older browsers
+    document.execCommand('copy');
+    const copyBtn = document.getElementById('copyLinkBtn');
+    copyBtn.textContent = 'Copied!';
+    setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+  }
 }
 
 function updateHostTeamsList(teams) {

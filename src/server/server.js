@@ -172,6 +172,7 @@ async function handleGameStart(ws, data) {
 
 async function startRound(room) {
   try {
+    room.currentRound++;
     room.currentGuesses = {};
     room.roundActive = true;
     room.roundStartTime = Date.now();
@@ -374,11 +375,10 @@ function handleNextRound(ws, data) {
     if (!room || room.stage !== 'intermission') return;
 
     room.stage = 'playing';
-    room.currentRound++;
 
     broadcastToRoom(room, {
         type: 'round:next',
-        round: room.currentRound
+        round: room.currentRound + 1
     });
 
     startRound(room);
@@ -501,3 +501,5 @@ process.on('SIGINT', () => {
   roomsStore.save();
   process.exit();
 });
+
+}
