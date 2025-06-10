@@ -59,6 +59,10 @@ wss.on('connection', (ws) => {
           handleSkipRound(ws, data);
           break;
           
+        case 'host:next-round':
+          handleNextRound(ws, data);
+          break;
+          
         case 'host:override-score':
           handleScoreOverride(ws, data);
           break;
@@ -151,10 +155,14 @@ async function handleGameStart(ws, data) {
   }
   
   room.stage = 'playing';
-  room.currentRound = 1;
+  room.currentRound = 0;
   room.roundsPlayed = 0;
   
   broadcastToRoom(room, { type: 'game:started' });
+  
+  // Pre-generate first round's content
+  room.nextPrompt = await generatePrompt();
+  room.nextImagePromise = generateImage(room.nextPrompt);
   
   // Start first round
   setTimeout(() => startRound(room), 1000);
@@ -162,39 +170,39 @@ async function handleGameStart(ws, data) {
 
 async function startRound(room) {
   try {
+    room.currentRound++;
     room.currentGuesses = {};
     room.roundActive = true;
+    room.roundStartTime = Date.now();
     
-    // Generate prompt
-    const prompt = await generatePrompt();
-    room.currentPrompt = prompt;
+    // Use pre-generated content
+    room.currentPrompt = room.nextPrompt;
     
-    // Generate image
-    let imageUrl;
-    try {
-      imageUrl = await generateImage(prompt);
-    } catch (error) {
-      console.error('Image generation failed:', error);
-      // Notify host to skip round
-      if (room.hostWs) {
-        room.hostWs.send(JSON.stringify({
-          type: 'round:failed',
-          message: 'Image generation failed. Please skip this round.'
-        }));
-      }
-      return;
+    broadcastToRoom(room, { type: 'round:preparing' });
+
+    // Wait for the image to be ready
+    const imageUrl = await room.nextImagePromise;
+    room.currentImage = imageUrl;
+
+    // Pre-generate content for the *next* round (if not the last round)
+    if (room.currentRound < 5) {
+        room.nextPrompt = await generatePrompt();
+        room.nextImagePromise = generateImage(room.nextPrompt);
+    } else {
+        room.nextPrompt = null;
+        room.nextImagePromise = null;
     }
     
-    // Broadcast round start
+    // Notify clients that round is ready to start with a countdown
     broadcastToRoom(room, {
-      type: 'round:start',
+      type: 'round:ready',
       round: room.currentRound,
-      imageUrl,
+      imageUrl: room.currentImage,
       duration: 60
     });
     
     // Set timeout for round end
-    room.roundTimeout = setTimeout(() => endRound(room), 60000);
+    room.roundTimeout = setTimeout(() => endRound(room), 63000); // 60s + 3s countdown
     
   } catch (error) {
     console.error('Round start error:', error);
@@ -214,7 +222,10 @@ function handleGuessSubmit(ws, data) {
   const room = roomsStore.get(conn.roomId);
   if (!room || !room.roundActive) return;
   
-  room.currentGuesses[conn.team] = data.text;
+  room.currentGuesses[conn.team] = {
+    text: data.text,
+    timestamp: Date.now()
+  };
   
   // Check if all teams have submitted
   if (Object.keys(room.currentGuesses).length === Object.keys(room.teams).length) {
@@ -227,9 +238,9 @@ async function endRound(room) {
   room.roundActive = false;
   
   // Prepare guesses for scoring
-  const guesses = Object.entries(room.currentGuesses).map(([team, text]) => ({
+  const guesses = Object.entries(room.currentGuesses).map(([team, guessData]) => ({
     team,
-    text
+    text: guessData.text
   }));
   
   // Add teams that didn't submit with empty guesses
@@ -245,17 +256,48 @@ async function endRound(room) {
     
     // Update cumulative scores
     scoringResult.forEach(({ team, score }) => {
-      const points = Math.round(score * 100);
+      const baseScore = score * 100;
+      let finalScore = baseScore;
+      
+      if (room.currentGuesses[team]) {
+        const timeTaken = (room.currentGuesses[team].timestamp - room.roundStartTime) / 1000;
+        const roundDuration = 60;
+        if (timeTaken < roundDuration) {
+          // Bonus is a percentage of remaining time, max 50% of base score
+          const timeBonusRatio = (roundDuration - timeTaken) / roundDuration;
+          const speedBonus = baseScore * timeBonusRatio * 0.5;
+          finalScore += speedBonus;
+        }
+      }
+      
+      const points = Math.round(finalScore);
       room.scores[team] = (room.scores[team] || 0) + points;
     });
     
     // Prepare results
-    const results = scoringResult.map(({ team, score }) => ({
-      team,
-      score: Math.round(score * 100),
-      guess: room.currentGuesses[team] || '(no guess)'
-    }));
+    const results = scoringResult.map(({ team, score }) => {
+      const baseScore = score * 100;
+      let finalScore = baseScore;
+      if (room.currentGuesses[team]) {
+        const timeTaken = (room.currentGuesses[team].timestamp - room.roundStartTime) / 1000;
+        const roundDuration = 60;
+        if (timeTaken < roundDuration) {
+          const timeBonusRatio = (roundDuration - timeTaken) / roundDuration;
+          const speedBonus = baseScore * timeBonusRatio * 0.5;
+          finalScore += speedBonus;
+        }
+      }
+      
+      return {
+        team,
+        score: Math.round(finalScore),
+        guess: room.currentGuesses[team] ? room.currentGuesses[team].text : '(no guess)'
+      };
+    });
     
+    room.roundsPlayed++;
+    const isGameOver = room.roundsPlayed >= 5;
+
     // Broadcast round end
     broadcastToRoom(room, {
       type: 'round:end',
@@ -263,17 +305,14 @@ async function endRound(room) {
       results,
       leaderboard: Object.entries(room.scores)
         .map(([team, score]) => ({ team, score }))
-        .sort((a, b) => b.score - a.score)
+        .sort((a, b) => b.score - a.score),
+      intermission: !isGameOver
     });
     
-    room.roundsPlayed++;
-    
-    // Check if game over
-    if (room.roundsPlayed >= 5) {
-      setTimeout(() => endGame(room), 3000);
+    if (isGameOver) {
+      setTimeout(() => endGame(room), 5000);
     } else {
-      room.currentRound++;
-      setTimeout(() => startRound(room), 5000);
+      room.stage = 'intermission';
     }
     
   } catch (error) {
@@ -294,6 +333,17 @@ async function endRound(room) {
         .sort((a, b) => b.score - a.score)
     });
   }
+}
+
+function handleNextRound(ws, data) {
+    const conn = connections.get(ws);
+    if (!conn || !conn.isHost) return;
+
+    const room = roomsStore.get(conn.roomId);
+    if (!room || room.stage !== 'intermission') return;
+
+    room.stage = 'playing';
+    startRound(room);
 }
 
 function endGame(room) {

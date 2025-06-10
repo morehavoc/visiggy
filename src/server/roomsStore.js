@@ -12,7 +12,11 @@ function createRoom() {
     scores: {},
     currentRound: 0,
     roundsPlayed: 0,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    currentPrompt: null,
+    currentImage: null,
+    nextPrompt: null,
+    nextImagePromise: null,
   };
   rooms.set(id, room);
   return id;

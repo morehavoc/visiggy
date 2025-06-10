@@ -11,6 +11,8 @@ async function generateImage(prompt) {
   };
   
   console.log('Generating image for prompt:', prompt);
+  console.log('Request URL:', url);
+  console.log('Request body:', JSON.stringify(body, null, 2));
   
   for (let attempt = 0; attempt <= 3; attempt++) {
     try {
