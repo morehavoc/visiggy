@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Guessing Game</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Start Screen -->
+    <div id="startScreen" class="screen active">
+      <h1>AI Image Guessing Game</h1>
+      <p>GPT creates weird prompts, AI generates images, teams race to guess!</p>
+      <div class="button-group">
+        <button id="createRoomBtn" class="btn btn-primary">Host New Game</button>
+        <div class="join-section">
+          <input type="text" id="joinRoomCode" placeholder="Room Code" maxlength="6">
+          <button id="joinRoomBtn" class="btn">Join as Team</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Host Screen -->
+    <div id="hostScreen" class="screen">
+      <div class="header">
+        <h2>Host View - Room: <span id="hostRoomCode"></span></h2>
+      </div>
+      <div id="hostLobby" class="lobby-section">
+        <h3>Teams Joined:</h3>
+        <div id="hostTeamsList" class="teams-list"></div>
+        <button id="startGameBtn" class="btn btn-primary" disabled>Start Game (Need 2+ teams)</button>
+      </div>
+      <div id="hostGame" class="game-section" style="display: none;">
+        <div class="round-info">
+          <h3>Round <span id="hostRoundNum">1</span> of 5</h3>
+          <div id="hostTimer" class="timer"></div>
+        </div>
+        <div id="hostImageContainer" class="image-container"></div>
+        <div id="hostControls" class="host-controls">
+          <button id="skipRoundBtn" class="btn btn-warning">Skip Round</button>
+        </div>
+        <div id="hostScoreboard" class="scoreboard"></div>
+      </div>
+      <div id="hostResults" class="results-section" style="display: none;"></div>
+    </div>
+
+    <!-- Team Screen -->
+    <div id="teamScreen" class="screen">
+      <div class="header">
+        <h2>Team: <span id="teamName"></span> - Room: <span id="teamRoomCode"></span></h2>
+      </div>
+      <div id="teamLobby" class="lobby-section">
+        <h3>Enter Your Team Name:</h3>
+        <input type="text" id="teamNameInput" placeholder="Team Name" maxlength="20">
+        <button id="joinTeamBtn" class="btn btn-primary">Join Game</button>
+        <div id="teamWaiting" style="display: none;">
+          <p>Waiting for host to start the game...</p>
+          <div id="teamsList" class="teams-list"></div>
+        </div>
+      </div>
+      <div id="teamGame" class="game-section" style="display: none;">
+        <div class="round-info">
+          <h3>Round <span id="teamRoundNum">1</span> of 5</h3>
+          <div id="teamTimer" class="timer"></div>
+        </div>
+        <div id="teamImageContainer" class="image-container"></div>
+        <div id="guessSection" class="guess-section">
+          <input type="text" id="guessInput" placeholder="What's in the image?" maxlength="100">
+          <button id="submitGuessBtn" class="btn btn-primary">Submit Guess</button>
+        </div>
+        <div id="teamScoreboard" class="scoreboard"></div>
+      </div>
+      <div id="teamResults" class="results-section" style="display: none;"></div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="gameOverScreen" class="screen">
+      <h1>Game Over!</h1>
+      <div id="finalLeaderboard" class="final-leaderboard"></div>
+      <button id="newGameBtn" class="btn btn-primary">Start New Game</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
