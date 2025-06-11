@@ -149,8 +149,8 @@ async function handleGameStart(ws, data) {
   const room = roomsStore.get(conn.roomId);
   if (!room) return;
   
-  if (Object.keys(room.teams).length < 2) {
-    ws.send(JSON.stringify({ type: 'error', message: 'Need at least 2 teams' }));
+  if (Object.keys(room.teams).length < 1) {
+    ws.send(JSON.stringify({ type: 'error', message: 'Need at least 1 team' }));
     return;
   }
   

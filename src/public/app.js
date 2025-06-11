@@ -226,18 +226,18 @@ function handleMessage(data) {
       const shareUrl = `${window.location.origin}${window.location.pathname}?room=${data.roomId}`;
       document.getElementById('shareableLink').value = shareUrl;
       updateHostTeamsList(data.teams);
-      document.getElementById('startGameBtn').disabled = data.teams.length < 2;
+      document.getElementById('startGameBtn').disabled = data.teams.length < 1;
       document.getElementById('startGameBtn').textContent = 
-          data.teams.length < 2 ? `Start Game (Need ${2 - data.teams.length} more team)` : 'Start Game';
+          data.teams.length < 1 ? `Start Game (Need ${1 - data.teams.length} more team)` : 'Start Game';
       break;
       
     case 'team:joined':
       updateTeamsList(data.teams);
       if (gameState.isHost) {
         updateHostTeamsList(data.teams);
-        document.getElementById('startGameBtn').disabled = data.teams.length < 2;
+        document.getElementById('startGameBtn').disabled = data.teams.length < 1;
         document.getElementById('startGameBtn').textContent = 
-          data.teams.length < 2 ? `Start Game (Need ${2 - data.teams.length} more team)` : 'Start Game';
+          data.teams.length < 1 ? `Start Game (Need ${1 - data.teams.length} more team)` : 'Start Game';
       }
       break;
       
