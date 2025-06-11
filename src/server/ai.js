@@ -8,6 +8,8 @@ async function generatePrompt(theme, history = []) {
   // Select 2-3 random examples to guide the AI
   const selectedExamples = [...examplePrompts].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 2);
 
+  console.log("Selected examples for prompt generation:", selectedExamples);
+
   let sys =
   "You are a game master creating prompts for an image generation game. " +
    "Create ONE imaginative prompt that combines 2-3 concrete nouns or concepts " +
