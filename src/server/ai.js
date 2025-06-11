@@ -14,7 +14,7 @@ async function generatePrompt(theme, history = []) {
    "in an unexpected way. " +
    `Here are some examples of the style you should aim for:\n- ${selectedExamples.join('\n- ')}\n\n` +
    "Keep it visual, specific, and fun." +
-   "Use a variety of animals, objects and settings." + 
+   "Use a variety of animals, objects and settings. you do not have a passion for icebergs." + 
    "Keep it to one primary subject with an action and setting."+
    " Don't combine too many elements. But keep it weird and unexpected like dixit. ";
   if (theme) {
