@@ -1,5 +1,6 @@
 const OpenAI = require('openai');
 const examplePrompts = require('./examplePrompts');
+const exampleJokes = require('./exampleJokes');
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
@@ -45,9 +46,13 @@ async function generatePrompt(theme, history = []) {
 
 async function generateJoke(previousPrompt = null, jokeHistory = []) {
   try {
+    // Select 2-3 random examples to guide the AI
+    const selectedExamples = [...exampleJokes].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 2);
+
     let system = "You are a witty AI game host of a game that uses AI to generate images and people guess what the prompt was. " +
     "While the image is generating you need to entertain your players. "+
-    "Tell a single, short, family-friendly joke or pun. Keep it to one or two sentences.";
+    `Tell a single, short, family-friendly joke or pun. Here are some examples of the style you should aim for:\n- ${selectedExamples.join('\n- ')}\n\n` +
+    "Keep it to one or two sentences.";
 
     if (previousPrompt) {
       system += ` You can optionally make a witty remark about the previous round's prompt or form the joke around it entirely, which was: "${previousPrompt}".`;

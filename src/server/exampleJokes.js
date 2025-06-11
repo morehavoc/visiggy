@@ -1,0 +1,22 @@
+module.exports = [
+  "Why don't scientists trust atoms? Because they make up everything!",
+  "I told my wife she was drawing her eyebrows too high. She looked surprised.",
+  "What do you call a fake noodle? An Impasta!",
+  "Why did the scarecrow win an award? Because he was outstanding in his field!",
+  "I'm reading a book on anti-gravity. It's impossible to put down!",
+  "What do you call a fish with no eyes? Fsh.",
+  "Why couldn't the bicycle stand up by itself? It was two tired.",
+  "I would tell you a joke about construction, but I'm still working on it.",
+  "What do you call a lazy kangaroo? Pouch potato.",
+  "Why did the cookie go to the doctor? Because it felt crummy.",
+  "What do you get when you cross a snowman and a vampire? Frostbite.",
+  "Why don't some couples go to the gym? Because some relationships don't work out.",
+  "I have a joke about time travel, but you didn't like it.",
+  "What do you call a sad strawberry? A blueberry.",
+  "Why did the golfer bring two pairs of pants? In case he got a hole in one.",
+  "What's orange and sounds like a parrot? A carrot.",
+  "Why can't a bicycle stand up by itself? It's two tired.",
+  "Did you hear about the restaurant on the moon? Great food, no atmosphere.",
+  "What do you call a bear with no teeth? A gummy bear.",
+  "I used to be a baker, but I couldn't make enough dough."
+];
