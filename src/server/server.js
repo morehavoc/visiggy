@@ -185,7 +185,8 @@ async function startRound(room) {
     // Tell jokes while the image generates
     if (room.jokeInterval) clearInterval(room.jokeInterval);
     const sendJoke = () => {
-      generateJoke(room.lastRoundPrompt).then(joke => {
+      generateJoke(room.lastRoundPrompt, room.jokeHistory).then(joke => {
+        room.jokeHistory.push(joke);
         broadcastToRoom(room, { type: 'joke:new', text: joke });
       });
     };
@@ -509,4 +510,3 @@ process.on('SIGINT', () => {
   roomsStore.save();
   process.exit();
 });
-

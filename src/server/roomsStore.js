@@ -22,6 +22,7 @@ function createRoom() {
     theme: null,
     jokeInterval: null,
     lastRoundPrompt: null,
+    jokeHistory: [],
   };
   rooms.set(id, room);
   return id;

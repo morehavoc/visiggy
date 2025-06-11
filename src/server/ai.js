@@ -1,14 +1,18 @@
 const OpenAI = require('openai');
+const examplePrompts = require('./examplePrompts');
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
 async function generatePrompt(theme, history = []) {
+  // Select 2-3 random examples to guide the AI
+  const selectedExamples = [...examplePrompts].sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 2) + 2);
+
   let sys =
   "You are a game master creating prompts for an image generation game. " +
    "Create ONE imaginative prompt that combines 2-3 concrete nouns or concepts " +
-   "in an unexpected way. Examples: 'astronaut riding a dinosaur through a library', " +
-   "'giant teacup floating in a cyberpunk city', 'medieval knights playing basketball'. " +
+   "in an unexpected way. " +
+   `Here are some examples of the style you should aim for:\n- ${selectedExamples.join('\n- ')}\n\n` +
    "Keep it visual, specific, and fun." +
    "Use a variety of animals, objects and settings." + 
    "Keep it to one primary subject with an action and setting."+
@@ -37,23 +41,29 @@ async function generatePrompt(theme, history = []) {
   return res.choices[0].message.content.trim().replace(/^["']|["']$/g, "");
 }
 
-async function generateJoke(previousPrompt = null) {
+async function generateJoke(previousPrompt = null, jokeHistory = []) {
   try {
     let system = "You are a witty AI game host of a game that uses AI to generate images and people guess what the prompt was. " +
     "While the image is generating you need to entertain your players. "+
     "Tell a single, short, family-friendly joke or pun. Keep it to one or two sentences.";
 
     if (previousPrompt) {
-      system += ` You can optionally make a witty remark about the previous round's prompt, which was: "${previousPrompt}".`;
+      system += ` You can optionally make a witty remark about the previous round's prompt or form the joke around it entirely, which was: "${previousPrompt}".`;
+    }
+
+    let userMsg = "Tell me a joke.";
+    if (jokeHistory.length > 0) {
+      const history = jokeHistory.join('\n- ');
+      userMsg = `Please tell a new, unique joke. Avoid telling these jokes again:\n- ${history}\n\nNew joke:`;
     }
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o",
       max_tokens: 40,
-      temperature: 0.7,
+      temperature: 1.0,
       messages: [
         { role: "system", content: system },
-        { role: "user", content: "Tell me a joke." }
+        { role: "user", content: userMsg }
       ]
     });
     
