@@ -185,7 +185,7 @@ async function startRound(room) {
     // Tell jokes while the image generates
     if (room.jokeInterval) clearInterval(room.jokeInterval);
     const sendJoke = () => {
-      generateJoke().then(joke => {
+      generateJoke(room.lastRoundPrompt).then(joke => {
         broadcastToRoom(room, { type: 'joke:new', text: joke });
       });
     };
@@ -217,15 +217,21 @@ async function startRound(room) {
     }
     
     // Notify clients that round is ready to start with a countdown
+    const roundDuration = 60 * 1000;
+    const countdownDuration = 3 * 1000;
+    const roundEndTime = Date.now() + roundDuration + countdownDuration;
+
+    // Notify clients that round is ready to start with a countdown
     broadcastToRoom(room, {
       type: 'round:ready',
       round: room.currentRound,
       imageUrl: room.currentImage,
-      duration: 60
+      duration: 60,
+      endTime: roundEndTime
     });
     
     // Set timeout for round end
-    room.roundTimeout = setTimeout(() => endRound(room), 63000); // 60s + 3s countdown
+    room.roundTimeout = setTimeout(() => endRound(room), roundDuration + countdownDuration);
     
   } catch (error) {
     if (room.jokeInterval) clearInterval(room.jokeInterval);
@@ -288,7 +294,7 @@ async function endRound(room) {
       
       if (room.currentGuesses[team]) {
         const timeTaken = (room.currentGuesses[team].timestamp - room.roundStartTime) / 1000;
-        const roundDuration = 60;
+        const roundDuration = 60 * 1000;
         if (timeTaken < roundDuration) {
           // Bonus is a percentage of remaining time, max 50% of base score
           const timeBonusRatio = (roundDuration - timeTaken) / roundDuration;
@@ -307,7 +313,7 @@ async function endRound(room) {
       let finalScore = baseScore;
       if (room.currentGuesses[team]) {
         const timeTaken = (room.currentGuesses[team].timestamp - room.roundStartTime) / 1000;
-        const roundDuration = 60;
+        const roundDuration = 60 * 1000;
         if (timeTaken < roundDuration) {
           const timeBonusRatio = (roundDuration - timeTaken) / roundDuration;
           const speedBonus = baseScore * timeBonusRatio * 0.5;
@@ -336,6 +342,8 @@ async function endRound(room) {
       intermission: !isGameOver
     });
     
+    room.lastRoundPrompt = room.currentPrompt;
+
     if (isGameOver) {
       setTimeout(() => endGame(room), 5000);
     } else {
@@ -502,3 +510,4 @@ process.on('SIGINT', () => {
   process.exit();
 });
 
+}

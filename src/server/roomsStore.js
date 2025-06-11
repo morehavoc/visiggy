@@ -21,6 +21,7 @@ function createRoom() {
     nextImagePromise: null,
     theme: null,
     jokeInterval: null,
+    lastRoundPrompt: null,
   };
   rooms.set(id, room);
   return id;

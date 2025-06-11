@@ -37,9 +37,15 @@ async function generatePrompt(theme, history = []) {
   return res.choices[0].message.content.trim().replace(/^["']|["']$/g, "");
 }
 
-async function generateJoke() {
+async function generateJoke(previousPrompt = null) {
   try {
-    const system = "You are a witty AI game host. Tell a single, short, family-friendly joke or pun about art, artists, or painting. Keep it to one or two sentences.";
+    let system = "You are a witty AI game host of a game that uses AI to generate images and people guess what the prompt was. " +
+    "While the image is generating you need to entertain your players. "+
+    "Tell a single, short, family-friendly joke or pun. Keep it to one or two sentences.";
+
+    if (previousPrompt) {
+      system += ` You can optionally make a witty remark about the previous round's prompt, which was: "${previousPrompt}".`;
+    }
     
     const response = await openai.chat.completions.create({
       model: "gpt-4o",

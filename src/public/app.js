@@ -10,6 +10,7 @@ let gameState = {
 // Timer state
 let timerInterval = null;
 let timeRemaining = 0;
+let serverEndTime = 0;
 
 // DOM Elements
 const screens = {
@@ -59,8 +60,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') joinTeam();
   });
   document.getElementById('guessInput').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') submitGuess();
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      submitGuess();
+    }
   });
+  document.getElementById('guessInput').addEventListener('input', updateCharCounter);
 });
 
 // Exit room
@@ -330,6 +335,23 @@ function showScreen(screenName) {
   screens[screenName].classList.add('active');
 }
 
+function updateCharCounter() {
+  const guessInput = document.getElementById('guessInput');
+  const charCounter = document.getElementById('charCounter');
+  const maxLength = guessInput.maxLength;
+  const currentLength = guessInput.value.length;
+  const remaining = maxLength - currentLength;
+  
+  charCounter.textContent = remaining;
+  if (remaining < 20) {
+    charCounter.style.color = '#ffaa00';
+  } else if (remaining < 0) {
+    charCounter.style.color = '#ff4444';
+  } else {
+    charCounter.style.color = '#888';
+  }
+}
+
 function copyShareLink() {
   const linkInput = document.getElementById('shareableLink');
   linkInput.select();
@@ -375,7 +397,7 @@ function startRoundUI(data) {
   // Show image is now handled by startCountdown
   
   // Start timer
-  startTimer(data.duration);
+  startTimer(data.duration, data.endTime);
   
   // Hide previous results - This is now handled by 'round:next'
   // if (gameState.isHost) {
@@ -437,9 +459,10 @@ function showIntermission() {
 }
 
 function updateScoreboard(leaderboard) {
+  const sortedLeaderboard = [...leaderboard].sort((a, b) => b.score - a.score);
   const scoreboardHTML = `
     <h4>Leaderboard:</h4>
-    ${leaderboard.map((entry, i) => `
+    ${sortedLeaderboard.map((entry, i) => `
       <div class="score-item ${i === 0 ? 'leader' : ''}">
         <span class="rank">${i + 1}.</span>
         <span class="team-name">${entry.team}</span>
@@ -455,18 +478,22 @@ function updateScoreboard(leaderboard) {
   }
 }
 
-function startTimer(duration) {
-  timeRemaining = duration;
-  updateTimerDisplay();
+function startTimer(duration, endTime) {
+  serverEndTime = endTime;
   
-  timerInterval = setInterval(() => {
-    timeRemaining--;
+  const update = () => {
+    const now = Date.now();
+    timeRemaining = Math.max(0, Math.round((serverEndTime - now) / 1000));
     updateTimerDisplay();
-    
-    if (timeRemaining <= 0) {
+
+    if (timeRemaining === 0) {
       stopTimer();
     }
-  }, 1000);
+  };
+
+  stopTimer(); // Clear any existing timer
+  timerInterval = setInterval(update, 500);
+  update(); // Run immediately
 }
 
 function stopTimer() {
@@ -487,6 +514,15 @@ function updateTimerDisplay() {
   } else {
     timer.textContent = 'Time\'s up!';
     timer.className = 'timer expired';
+
+    // Auto-submit if player has text and hasn't submitted
+    if (!gameState.isHost) {
+      const guessInput = document.getElementById('guessInput');
+      const submitBtn = document.getElementById('submitGuessBtn');
+      if (guessInput.value.trim() && !submitBtn.disabled) {
+        submitGuess();
+      }
+    }
   }
 }
 

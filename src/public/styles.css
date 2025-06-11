@@ -291,6 +291,39 @@
     flex: 1;
   }
   
+  .textarea-container {
+    position: relative;
+    flex: 1;
+    display: flex;
+  }
+
+  .guess-section textarea {
+    flex: 1;
+    padding: 12px 16px;
+    font-size: 1.1rem;
+    border: 2px solid #333;
+    border-radius: 8px;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    transition: border-color 0.3s ease;
+    resize: vertical;
+    min-height: 50px;
+    padding-right: 50px; /* Space for counter */
+  }
+
+  .guess-section textarea:focus {
+    outline: none;
+    border-color: #00a8ff;
+  }
+
+  .char-counter {
+    position: absolute;
+    right: 12px;
+    bottom: 8px;
+    font-size: 0.9rem;
+    color: #888;
+  }
+
   /* Host Controls */
   .host-controls {
     text-align: center;
